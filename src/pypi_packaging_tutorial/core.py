@@ -5,5 +5,5 @@ def example_function(a,b):
     return a+b;
 
 class ExampleClass:
-    def example_class_method():
+    def example_class_method(self):
         return 'expected result'; 
