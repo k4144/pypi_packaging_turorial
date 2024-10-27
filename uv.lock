@@ -330,8 +330,11 @@ wheels = [
 
 [[package]]
 name = "pypi-packaging-tutorial"
-version = "0.1.1.dev4+g2b0c41c.d20241027"
+version = "0.1.1.dev8+g0a9a465.d20241027"
 source = { editable = "." }
+dependencies = [
+    { name = "pycodestyle" },
+]
 
 [package.optional-dependencies]
 dev = [
@@ -348,6 +351,7 @@ requires-dist = [
     { name = "black", marker = "extra == 'dev'", specifier = ">=22.0" },
     { name = "flake8", marker = "extra == 'dev'", specifier = ">=4.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=0.900" },
+    { name = "pycodestyle", specifier = ">=2.9.1" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=3.0" },
     { name = "tox", marker = "extra == 'dev'", specifier = ">=3.24" },

@@ -1,1 +1,1 @@
-test file to be ignored by build
+# test file to be ignored by build
