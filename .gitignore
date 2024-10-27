@@ -6,7 +6,6 @@ dist/
 
 ## test setup
 *.py[cod]
-__pycache__/
 *.so
 *.egg
 *.egg-info/
@@ -19,6 +18,7 @@ build/
 
 
 ## jupyter
+__pycache__
 *.bundle.*
 lib/
 node_modules/
