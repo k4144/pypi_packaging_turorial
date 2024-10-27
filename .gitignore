@@ -3,6 +3,8 @@
 .git
 dist/
 
+## setuptools
+_version.py
 
 ## test setup
 *.py[cod]

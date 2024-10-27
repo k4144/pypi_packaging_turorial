@@ -1,0 +1,11 @@
+Name                                                        Stmts   Miss  Cover   Missing
+-----------------------------------------------------------------------------------------
+src/pypi_packaging_tutorial/__init__.py                         4      0   100%
+src/pypi_packaging_tutorial/core.py                             7      0   100%
+src/pypi_packaging_tutorial/divide/__init__.py                  0      0   100%
+src/pypi_packaging_tutorial/divide/divide_by_three.py           2      0   100%
+src/pypi_packaging_tutorial/example.py                          2      0   100%
+src/pypi_packaging_tutorial/multiply/__init__.py                0      0   100%
+src/pypi_packaging_tutorial/multiply/multiply_by_three.py       2      0   100%
+-----------------------------------------------------------------------------------------
+TOTAL                                                          17      0   100%
