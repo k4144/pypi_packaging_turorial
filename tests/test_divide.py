@@ -8,4 +8,3 @@ def test_method():
 
 def test_divide_by_three():
     assert divide_by_three(45) == 15
-
