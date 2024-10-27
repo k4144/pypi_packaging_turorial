@@ -1,8 +1,24 @@
+##general
 .DS_Store
 .git
 dist/
 
 
+## test setup
+*.py[cod]
+__pycache__/
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.coverage
+.pytest_cache/
+.mypy_cache/
+.tox/
+
+
+## jupyter
 *.bundle.*
 lib/
 node_modules/
