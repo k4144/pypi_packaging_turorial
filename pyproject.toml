@@ -98,7 +98,7 @@ disallow_untyped_defs = true
 ## metadata:long_description = ['file: README.md', 'LICENSE.txt']
 ## metadata
 [metadata]
-name = 'pypi_pyckyging_tutorial'
+name = 'pypi_packaging_tutorial'
 version = '0.1.0'
 author = 'your name'
 author_email = 'your_email@example.com'
