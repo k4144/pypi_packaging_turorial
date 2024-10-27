@@ -29,8 +29,7 @@ jobs:
         pip install -e ".[dev]"
 
     - name: Run tests
-      run: |
-# Run pytest from the root directory
+      run: | # Run pytest from the root directory
         python -m pytest
 
 
