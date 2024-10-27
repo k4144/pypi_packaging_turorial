@@ -20,11 +20,12 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pytest coverage
-          # Add any other dependencies your project needs
-      
+          pip install pytest
+          pip install -e ".[dev]"  # Install package in editable mode with dev dependencies
+          
       - name: Run tests with coverage
-        run: python -m pytest
+        run: |
+          pytest tests/
       
       - name: Generate coverage report
         run: coverage report -m > coverage_report.txt
