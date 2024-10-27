@@ -54,7 +54,7 @@ dependencies = [
 # if the package is located under src/, this line is unnecessary
 # packages = [{include = "pypi_packaging_tutorial"}]
 
-#exclude = [
+# exclude = [
 #    "tests/ignored_folder"
 #]
 
