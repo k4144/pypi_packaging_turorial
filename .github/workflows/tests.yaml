@@ -30,7 +30,7 @@ jobs:
 
     - name: Run tests
       run: |
-	# Run pytest from the root directory
+# Run pytest from the root directory
         python -m pytest
 
 
