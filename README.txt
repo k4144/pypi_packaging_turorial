@@ -1,4 +1,6 @@
-`pypi_pyckaging_tutorial` provides a simple example to create your first Python package and upload it to pypi.
+![GitHub Actions Workflow Status](https://github.com/k4144/pypi_packaging_tutorial/actions/workflows/tests.yml/badge.svg)
+
+provides a simple example to test pypi publishing and github workflows
 
 
 example usage:
