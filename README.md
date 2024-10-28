@@ -1,6 +1,6 @@
 ![GitHub Actions Workflow Status](https://github.com/k4144/pypi_packaging_turorial/actions/workflows/tests.yml/badge.svg)
 
-![GitHub Actions Workflow Status](https://img.shields.io/endpoint?style=flat&url=https://gist.githubusercontent.com/k4144/ad3c2477fce563053e8a472d4126a137/raw.svg?logo=pytest)
+![GitHub Actions Workflow Status](https://img.shields.io/endpoint?style=flat&url=https://gist.githubusercontent.com/k4144/ad3c2477fce563053e8a472d4126a137/raw&logo=pytest)
 
 
 provides a simple example to test pypi publishing and github workflows
