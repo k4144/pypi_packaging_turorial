@@ -35,7 +35,7 @@ jobs:
           GIST_ID: ${{ secrets.COVERAGE_GIST_ID }}
           GITHUB_TOKEN: ${{ secrets.GIST_TOKEN }}
         run: |
-          coverage_percentage=$(grep "TOTAL" coverage_report.txt | awk '{print $4}')
+          coverage_percentage=$(grep "TOTAL" coverage_report.txt | awk '{print $4}' | sed 's/%//')
           if (( $(echo "$coverage_percentage >= 75" | bc -l) )); then
           color="green"
           elif (( $(echo "$coverage_percentage >= 50" | bc -l) )); then
