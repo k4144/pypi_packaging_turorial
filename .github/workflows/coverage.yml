@@ -45,6 +45,7 @@ jobs:
           else
           color="red"
           fi
+          coverage_message="${coverage_percentage}%"
           curl -L \
             -X PATCH \
             -H "Accept: application/vnd.github+json" \
