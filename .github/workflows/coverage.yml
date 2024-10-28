@@ -37,7 +37,7 @@ jobs:
         run: |
           coverage_percentage=$(grep "TOTAL" coverage_report.txt | awk '{print $4}' | sed 's/%//')
           if (( $(echo "$coverage_percentage >= 75" | bc -l) )); then
-          color="green"
+          color="brightgreen"
           elif (( $(echo "$coverage_percentage >= 50" | bc -l) )); then
           color="orange"
           elif (( $(echo "$coverage_percentage >= 25" | bc -l) )); then
