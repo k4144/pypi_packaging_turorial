@@ -1,4 +1,3 @@
-tag, then creates a GitHub Release. Use a PAT so that on: release workflows in other repos can be triggered if needed.
 name: tag-release
 on:
   push:
