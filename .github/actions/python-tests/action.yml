@@ -16,7 +16,7 @@ inputs:
   uv-sync-args:
     description: Extra args for `uv sync` (e.g., --group dev)
     required: false
-    default: "--all-groups"
+    default: "--all-extras"
   pytest-args:
     description: Extra args for pytest
     required: false
