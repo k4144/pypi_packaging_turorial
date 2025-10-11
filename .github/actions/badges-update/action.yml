@@ -47,7 +47,7 @@ runs:
           <text x='82' y='15'>${STATUS_TEXT}</text>
           </g>
           </svg>
-          SVG
+        SVG
         # Coverage badge
         COV=${COV_IN:-0}
         if (( COV >= 90 )); then CCLR="#4c1"; elif (( COV >= 75 )); then CCLR="#dfb317"; else CCLR="#e05d44"; fi
@@ -63,7 +63,7 @@ runs:
           <text x='97' y='15'>${COV}%</text>
           </g>
           </svg>
-          SVG
+        SVG
 
     - name: Commit badges
       shell: bash
