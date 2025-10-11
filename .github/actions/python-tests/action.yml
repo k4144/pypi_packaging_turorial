@@ -8,30 +8,30 @@ inputs:
   python-version:
     description: Python version to use
     required: false
-    default: '3.11'
+    default: "3.11"
   working-directory:
     description: Directory to run tests from
     required: false
-    default: '.'
+    default: "."
   install-command:
     description: Command to install dependencies
     required: false
-    default: 'pip install -r requirements.txt'
+    default: "pip install -r requirements.txt"
   pytest-args:
     description: Extra args for pytest
     required: false
-    default: ''
+    default: ""
 
 outputs:
-  tests-passed:
-    description: 'true/false'
+  tests_passed:
+    description: "true/false"
     value: ${{ steps.mark.outputs.passed }}
-  coverage-pct:
-    description: 'coverage percentage as integer (e.g. 87)'
+  coverage_pct:
+    description: "coverage percentage as integer (e.g. 87)"
     value: ${{ steps.cover.outputs.pct }}
 
 runs:
-  using: composite
+  using: "composite"
   steps:
     - name: Set up Python
       uses: actions/setup-python@v5
@@ -51,19 +51,20 @@ runs:
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
-        set -o pipefail
+        set -euo pipefail
         pytest --maxfail=1 --disable-warnings \
           --cov=. --cov-report=term-missing --cov-report=xml \
           ${{ inputs.pytest-args }} | tee pytest-output.txt
 
-    - name: Extract coverage % from coverage.xml
+    - name: Extract coverage %
       id: cover
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
-        if [[ ! -f coverage.xml ]]; then echo 'pct=0' >> "$GITHUB_OUTPUT"; exit 0; fi
-        # Grab line-rate from the XML and convert to integer percent
-        RATE=$(grep -o 'line-rate="[0-9.]*"' coverage.xml | head -n1 | sed -E 's/[^0-9.]+//g')
+        if [[ ! -f coverage.xml ]]; then
+          echo "pct=0" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
         pct=$(python - <<'PY'
 import xml.etree.ElementTree as ET
 rate = 0.0
@@ -74,18 +75,15 @@ except Exception:
 print(int(round(rate*100)))
 PY
 )
-        echo "pct=$pct" >> "$GITHUB_OUTPUT"        
-
-        echo "pct=$PCT" >> "$GITHUB_OUTPUT"
-      env:
-        RATE: ${{ steps.cover.outputs.rate }}
+        echo "pct=$pct" >> "$GITHUB_OUTPUT"
 
     - name: Mark pass/fail
       id: mark
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
-        if [[ -s pytest-output.txt ]]; then echo 'passed=true' >> "$GITHUB_OUTPUT"; else echo 'passed=false' >> "$GITHUB_OUTPUT"; fi
+        # If pytest step reached here, treat as passed
+        echo "passed=true" >> "$GITHUB_OUTPUT"
 
     - name: Upload test logs & coverage
       uses: actions/upload-artifact@v4

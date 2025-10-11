@@ -29,9 +29,9 @@ jobs:
 
       # Update badges
       - name: Update badges (only on main, py 3.12)
-        if: github.ref == 'refs/heads/main' && matrix.python-version == '3.13'
+        if: github.ref == 'refs/heads/main' && matrix.python-version == '3.12'
         uses: ./.github/actions/badges-update
         with:
-          tests-passed: ${{ steps.py.outputs['tests-passed'] }}
-          coverage-pct:  ${{ steps.py.outputs['coverage-pct'] }}
+          tests-passed: ${{ steps.py.outputs.tests_passed }}
+          coverage-pct:  ${{ steps.py.outputs.coverage_pct }}
           commit-branch: ${{ github.ref_name }}
