@@ -1,22 +1,17 @@
-Determines if current ref is a SemVer tag and whether it’s a major/minor bump compared to the previous SemVer tag.
 name: SemVer Release Check
 description: Detect if current tag is a major/minor/patch change vs previous semver tag
 branding:
   icon: tag
   color: purple
 
-outputs:
-  is-semver:
-    description: 'true if ref is vMAJOR.MINOR.PATCH'
+outputs:   
+  is_semver:   
     value: ${{ steps.out.outputs.is_semver }}
-  release-type:
-    description: 'major|minor|patch|none'
+  release_type:
     value: ${{ steps.out.outputs.release_type }}
-  current-tag:
-    description: 'current tag like v1.2.3'
+  current_tag:
     value: ${{ steps.cur.outputs.tag }}
-  previous-tag:
-    description: 'previous SemVer tag (may be empty)'
+  previous_tag:
     value: ${{ steps.prev.outputs.prev_tag }}
 
 runs:
@@ -73,3 +68,5 @@ runs:
           echo "is_semver=false" >> "$GITHUB_OUTPUT"
           echo "release_type=none" >> "$GITHUB_OUTPUT"
         fi
+
+
