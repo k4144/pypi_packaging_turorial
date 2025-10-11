@@ -64,12 +64,18 @@ runs:
         if [[ ! -f coverage.xml ]]; then echo 'pct=0' >> "$GITHUB_OUTPUT"; exit 0; fi
         # Grab line-rate from the XML and convert to integer percent
         RATE=$(grep -o 'line-rate="[0-9.]*"' coverage.xml | head -n1 | sed -E 's/[^0-9.]+//g')
-        PCT=$(python - <<'PY'
-import math, os
-rate = float(os.environ.get('RATE','0'))
+        pct=$(python - <<'PY'
+import xml.etree.ElementTree as ET
+rate = 0.0
+try:
+    rate = float(ET.parse("coverage.xml").getroot().attrib.get("line-rate","0"))
+except Exception:
+    pass
 print(int(round(rate*100)))
 PY
 )
+        echo "pct=$pct" >> "$GITHUB_OUTPUT"        
+
         echo "pct=$PCT" >> "$GITHUB_OUTPUT"
       env:
         RATE: ${{ steps.cover.outputs.rate }}
