@@ -68,15 +68,15 @@ runs:
           exit 0
         fi
         pct=$(python - <<'PY'
-import xml.etree.ElementTree as ET
-rate = 0.0
-try:
-    rate = float(ET.parse("coverage.xml").getroot().attrib.get("line-rate","0"))
-except Exception:
-    pass
-print(int(round(rate*100)))
-PY
-)
+        import xml.etree.ElementTree as ET
+        rate = 0.0
+        try:
+            rate = float(ET.parse("coverage.xml").getroot().attrib.get("line-rate","0"))
+        except Exception:
+            pass
+        print(int(round(rate*100)))
+        PY
+        )
         echo "pct=$pct" >> "$GITHUB_OUTPUT"
 
     - name: Mark pass/fail
