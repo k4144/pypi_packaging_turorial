@@ -1,4 +1,3 @@
-Creates SVG badges for test status & coverage and commits them to badges/.
 name: Badges Update
 description: Generate test/coverage badges and commit to repo under badges/
 branding:
