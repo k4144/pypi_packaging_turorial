@@ -1,4 +1,3 @@
-Uses composite actions #1 and #3. Updates badges on default branch only.
 name: tests
 on:
   push:
