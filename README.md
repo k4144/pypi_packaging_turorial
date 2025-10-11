@@ -3,6 +3,12 @@
 ![GitHub Actions Workflow Status](https://img.shields.io/endpoint?style=flat&url=https://gist.githubusercontent.com/k4144/ad3c2477fce563053e8a472d4126a137/raw&logo=pytest)
 
 
+![tests](https://raw.githubusercontent.com/<owner>/<repo>/<branch>/badges/tests.svg)
+![coverage](https://raw.githubusercontent.com/<owner>/<repo>/<branch>/badges/coverage.svg)
+
+
+![CI](https://github.com/<owner>/<repo>/actions/workflows/tests.yml/badge.svg)
+
 provides a simple example to test pypi publishing and github workflows
 
 

@@ -1,0 +1,75 @@
+Determines if current ref is a SemVer tag and whether it’s a major/minor bump compared to the previous SemVer tag.
+name: SemVer Release Check
+description: Detect if current tag is a major/minor/patch change vs previous semver tag
+branding:
+  icon: tag
+  color: purple
+
+outputs:
+  is-semver:
+    description: 'true if ref is vMAJOR.MINOR.PATCH'
+    value: ${{ steps.out.outputs.is_semver }}
+  release-type:
+    description: 'major|minor|patch|none'
+    value: ${{ steps.out.outputs.release_type }}
+  current-tag:
+    description: 'current tag like v1.2.3'
+    value: ${{ steps.cur.outputs.tag }}
+  previous-tag:
+    description: 'previous SemVer tag (may be empty)'
+    value: ${{ steps.prev.outputs.prev_tag }}
+
+runs:
+  using: composite
+  steps:
+    - name: Ensure full history
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Extract current tag
+      id: cur
+      shell: bash
+      run: |
+        REF="${GITHUB_REF##*/}"
+        if [[ "$GITHUB_REF" != refs/tags/* ]]; then
+          echo "Not a tag ref";
+          echo "tag=" >> "$GITHUB_OUTPUT"; exit 0; fi
+        echo "tag=$REF" >> "$GITHUB_OUTPUT"
+
+    - name: Find previous SemVer tag
+      id: prev
+      shell: bash
+      run: |
+        mapfile -t TAGS < <(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname)
+        CUR='${{ steps.cur.outputs.tag }}'
+        PREV=""
+        for t in "${TAGS[@]}"; do
+          [[ "$t" == "$CUR" ]] && continue
+          PREV="$t"; break
+        done
+        echo "prev_tag=$PREV" >> "$GITHUB_OUTPUT"
+
+    - name: Decide release type
+      id: out
+      shell: bash
+      run: |
+        CUR='${{ steps.cur.outputs.tag }}'
+        if [[ "$CUR" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+          cMaj=${BASH_REMATCH[1]}; cMin=${BASH_REMATCH[2]}; cPat=${BASH_REMATCH[3]}
+          P='${{ steps.prev.outputs.prev_tag }}'
+          if [[ "$P" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            pMaj=${BASH_REMATCH[1]}; pMin=${BASH_REMATCH[2]}; pPat=${BASH_REMATCH[3]}
+            if (( cMaj>pMaj )); then RT=major
+            elif (( cMaj==pMaj && cMin>pMin )); then RT=minor
+            elif (( cMaj==pMaj && cMin==pMin && cPat>pPat )); then RT=patch
+            else RT=none; fi
+          else
+            RT=major  # first tag treated as major baseline
+          fi
+          echo "is_semver=true" >> "$GITHUB_OUTPUT"
+          echo "release_type=$RT" >> "$GITHUB_OUTPUT"
+        else
+          echo "is_semver=false" >> "$GITHUB_OUTPUT"
+          echo "release_type=none" >> "$GITHUB_OUTPUT"
+        fi

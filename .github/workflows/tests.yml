@@ -1,38 +1,38 @@
-# .github/workflows/tests.yml
-name: Run Tests
-
+Uses composite actions #1 and #3. Updates badges on default branch only.
+name: tests
 on:
   push:
     branches: [ main ]
   pull_request:
-    branches: [ main ]
 
+permissions:
+  contents: write  # needed for committing badges
+  id-token: write 
 
 jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
+        python-version: ['3.9', '3.10', '3.11', '3.12', '3.12']
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - id: py
+        name: Run pytest
+        uses: ./.github/actions/python-tests
+        with:
+          python-version: ${{ matrix.python-version }}
+          working-directory: '.'
+          install-command: 'pip install -r requirements.txt'
+          pytest-args: ''
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
-
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -e ".[dev]"
-
-    - name: Run tests
-      run: | # Run pytest from the root directory
-        python -m pytest
-
-
-    - name: Run linting
-      run: |
-        flake8 src/ tests/
+      # Update badges
+      - name: Update badges (only on main, py 3.12)
+        if: github.ref == 'refs/heads/main' && matrix.python-version == '3.13'
+        uses: ./.github/actions/badges-update
+        with:
+          tests-passed: ${{ steps.py.outputs['tests-passed'] }}
+          coverage-pct:  ${{ steps.py.outputs['coverage-pct'] }}
+          commit-branch: ${{ github.ref_name }}

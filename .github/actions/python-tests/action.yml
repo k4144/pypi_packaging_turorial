@@ -1,0 +1,90 @@
+name: Python Tests (pytest + coverage)
+description: Run pytest with coverage and expose coverage percentage & pass/fail
+branding:
+  icon: check-circle
+  color: blue
+
+inputs:
+  python-version:
+    description: Python version to use
+    required: false
+    default: '3.11'
+  working-directory:
+    description: Directory to run tests from
+    required: false
+    default: '.'
+  install-command:
+    description: Command to install dependencies
+    required: false
+    default: 'pip install -r requirements.txt'
+  pytest-args:
+    description: Extra args for pytest
+    required: false
+    default: ''
+
+outputs:
+  tests-passed:
+    description: 'true/false'
+    value: ${{ steps.mark.outputs.passed }}
+  coverage-pct:
+    description: 'coverage percentage as integer (e.g. 87)'
+    value: ${{ steps.cover.outputs.pct }}
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install deps
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        python -m pip install --upgrade pip
+        ${{ inputs.install-command }}
+        pip install pytest pytest-cov coverage
+
+    - name: Run pytest with coverage
+      id: run
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        set -o pipefail
+        pytest --maxfail=1 --disable-warnings \
+          --cov=. --cov-report=term-missing --cov-report=xml \
+          ${{ inputs.pytest-args }} | tee pytest-output.txt
+
+    - name: Extract coverage % from coverage.xml
+      id: cover
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        if [[ ! -f coverage.xml ]]; then echo 'pct=0' >> "$GITHUB_OUTPUT"; exit 0; fi
+        # Grab line-rate from the XML and convert to integer percent
+        RATE=$(grep -o 'line-rate="[0-9.]*"' coverage.xml | head -n1 | sed -E 's/[^0-9.]+//g')
+        PCT=$(python - <<'PY'
+import math, os
+rate = float(os.environ.get('RATE','0'))
+print(int(round(rate*100)))
+PY
+)
+        echo "pct=$PCT" >> "$GITHUB_OUTPUT"
+      env:
+        RATE: ${{ steps.cover.outputs.rate }}
+
+    - name: Mark pass/fail
+      id: mark
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        if [[ -s pytest-output.txt ]]; then echo 'passed=true' >> "$GITHUB_OUTPUT"; else echo 'passed=false' >> "$GITHUB_OUTPUT"; fi
+
+    - name: Upload test logs & coverage
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-artifacts
+        path: |
+          ${{ inputs.working-directory }}/pytest-output.txt
+          ${{ inputs.working-directory }}/coverage.xml
