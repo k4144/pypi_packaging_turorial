@@ -89,8 +89,7 @@ runs:
     - name: Upload test logs & coverage
       uses: actions/upload-artifact@v4
       with:
-        name: test-artifacts
+        name: test-artifacts-${{ inputs.python-version }}
         path: |
-          ${{ inputs.working-directory }}/pytest-output.txt
-          ${{ inputs.working-directory }}/coverage.xml
-
+        ${{ inputs.working-directory }}/pytest-output.txt
+        ${{ inputs.working-directory }}/coverage.xml
