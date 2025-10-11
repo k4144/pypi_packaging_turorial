@@ -9,6 +9,15 @@
 
 ![CI](https://github.com/<owner>/<repo>/actions/workflows/tests.yml/badge.svg)
 
+![tests](https://raw.githubusercontent.com/<owner>/<repo>/<branch>/badges/tests.svg)
+![coverage](https://raw.githubusercontent.com/<owner>/<repo>/<branch>/badges/coverage.svg)
+
+
+![CI](https://github.com/<owner>/<repo>/actions/workflows/tests.yml/badge.svg)
+
+
+
+
 provides a simple example to test pypi publishing and github workflows
 
 
