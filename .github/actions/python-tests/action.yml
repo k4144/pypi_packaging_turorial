@@ -1,5 +1,5 @@
-name: Python Tests (pytest + coverage)
-description: Run pytest with coverage and expose coverage percentage & pass/fail
+name: Python Tests (pytest + coverage via uv)
+description: Run pytest with coverage using uv + pyproject.toml
 branding:
   icon: check-circle
   color: blue
@@ -8,15 +8,15 @@ inputs:
   python-version:
     description: Python version to use
     required: false
-    default: "3.11"
+    default: "3.12"
   working-directory:
     description: Directory to run tests from
     required: false
     default: "."
-  install-command:
-    description: Command to install dependencies
+  uv-sync-args:
+    description: Extra args for `uv sync` (e.g., --group dev)
     required: false
-    default: "pip install -r requirements.txt"
+    default: "--all-groups"
   pytest-args:
     description: Extra args for pytest
     required: false
@@ -38,13 +38,15 @@ runs:
       with:
         python-version: ${{ inputs.python-version }}
 
-    - name: Install deps
+    - name: Install uv
+      uses: astral-sh/setup-uv@v1
+
+    - name: Resolve & install project deps (pyproject.toml)
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
-        python -m pip install --upgrade pip
-        ${{ inputs.install-command }}
-        pip install pytest pytest-cov coverage
+        # If you keep a lockfile, you can add --frozen/--locked.
+        uv sync ${{ inputs.uv-sync-args }}
 
     - name: Run pytest with coverage
       id: run
@@ -52,7 +54,7 @@ runs:
       working-directory: ${{ inputs.working-directory }}
       run: |
         set -euo pipefail
-        pytest --maxfail=1 --disable-warnings \
+        uv run pytest --maxfail=1 --disable-warnings \
           --cov=. --cov-report=term-missing --cov-report=xml \
           ${{ inputs.pytest-args }} | tee pytest-output.txt
 
@@ -65,26 +67,23 @@ runs:
           echo "pct=0" >> "$GITHUB_OUTPUT"
           exit 0
         fi
-
         pct=$(python - <<'PY'
-        import xml.etree.ElementTree as ET
-        rate = 0.0
-        try:
-            rate = float(ET.parse("coverage.xml").getroot().attrib.get("line-rate", "0"))
-        except Exception:
-            pass
-        print(int(round(rate*100)))
-        PY
-        )
+import xml.etree.ElementTree as ET
+rate = 0.0
+try:
+    rate = float(ET.parse("coverage.xml").getroot().attrib.get("line-rate","0"))
+except Exception:
+    pass
+print(int(round(rate*100)))
+PY
+)
         echo "pct=$pct" >> "$GITHUB_OUTPUT"
-
 
     - name: Mark pass/fail
       id: mark
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
-        # If pytest step reached here, treat as passed
         echo "passed=true" >> "$GITHUB_OUTPUT"
 
     - name: Upload test logs & coverage
@@ -94,3 +93,4 @@ runs:
         path: |
           ${{ inputs.working-directory }}/pytest-output.txt
           ${{ inputs.working-directory }}/coverage.xml
+

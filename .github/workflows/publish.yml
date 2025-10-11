@@ -1,0 +1,62 @@
+# .github/workflows/publish-on-tag.yml
+name: publish-on-tag
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+permissions:
+  contents: write
+  id-token: write          # REQUIRED for PyPI Trusted Publisher (OIDC)
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+
+      # OPTIONAL gates — keep if you only want major/minor publishes
+      - id: semver
+        name: Check release type vs previous tag
+        uses: ./.github/actions/semver-release-check
+
+      - id: changed
+        name: Detect file changes since previous tag
+        if: steps.semver.outputs.previous_tag != ''
+        shell: bash
+        run: |
+          prev='${{ steps.semver.outputs.previous_tag }}'
+          cur='${{ steps.semver.outputs.current_tag }}'
+          if [[ -z "$prev" ]]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          elif git diff --quiet "$prev..$cur"; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Build once (choose your main Python)
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Build distributions
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build
+
+      # Publish via PyPI Trusted Publisher (no secret needed)
+      # If you want to publish on ANY tag, remove the "if:" line below.
+      - name: Publish to PyPI (Trusted Publisher)
+        if: >
+          (steps.semver.outputs.is_semver == 'true') &&
+          (steps.semver.outputs.release_type == 'major' || steps.semver.outputs.release_type == 'minor') &&
+          (steps.changed.outputs.changed == 'true' || steps.semver.outputs.previous_tag == '')
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          # repository-url: https://test.pypi.org/legacy/  # for TestPyPI
+          skip-existing: true
+          print-hash: true
+
