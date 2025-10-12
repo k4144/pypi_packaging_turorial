@@ -55,7 +55,7 @@ runs:
       # we test the src folder. change as desired (eg src -> .)
       run: |
         set -euo pipefail
-        uv run pytest --maxfail=1 --disable-warnings \
+        uv run pytest tests/ --maxfail=1 --disable-warnings \
           --cov=src --cov-report=term-missing --cov-report=xml \
           ${{ inputs.pytest-args }} | tee pytest-output.txt
 
