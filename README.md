@@ -4,16 +4,16 @@
 
 
 ![tests](https://raw.githubusercontent.com/k4144/pypi_packaging_turorial/main/badges/tests.svg)
-![coverage](https://raw.githubusercontent.com/<owner>/<repo>/<branch>/badges/coverage.svg)
+![coverage](https://raw.githubusercontent.com/k4144/pypi_packaging_turorial/main/badges/coverage.svg)
 
 
-![CI](https://github.com/<owner>/<repo>/actions/workflows/tests.yml/badge.svg)
+![CI](https://github.com/k4144/pypi_packaging_turorial/actions/workflows/tests.yml/badge.svg)
 
-![tests](https://raw.githubusercontent.com/<owner>/<repo>/<branch>/badges/tests.svg)
-![coverage](https://raw.githubusercontent.com/<owner>/<repo>/<branch>/badges/coverage.svg)
+![tests](https://raw.githubusercontent.com/k4144/pypi_packaging_turorial/<branch>/badges/tests.svg)
+![coverage](https://raw.githubusercontent.com/k4144/pypi_packaging_turorial/<branch>/badges/coverage.svg)
 
 
-![CI](https://github.com/<owner>/<repo>/actions/workflows/tests.yml/badge.svg)
+![CI](https://github.com/k4144/pypi_packaging_turorial/actions/workflows/tests.yml/badge.svg)
 
 
 
