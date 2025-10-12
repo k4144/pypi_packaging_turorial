@@ -1,0 +1,93 @@
+name: Badges Update
+description: Generate test/coverage badges and commit to repo under badges/
+branding:
+  icon: award
+  color: green
+
+inputs:
+  tests-passed:
+    required: true
+    description: 'true/false from tests action'
+  coverage-pct:
+    required: true
+    description: 'integer percentage 0-100'
+  commit-branch:
+    required: false
+    default: ${{ github.ref_name }}
+  commit-message:
+    required: false
+    default: 'chore(badges): update test & coverage badges'
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Generate badges (SVG)
+      shell: bash
+      run: |
+        mkdir -p badges
+        PASS_IN='${{ inputs.tests-passed }}'
+        COV_IN='${{ inputs.coverage-pct }}'
+
+        STATUS_LABEL="tests"
+        if [[ "$PASS_IN" == "true" ]]; then
+          STATUS_TEXT="passing"
+          STATUS_FILL="#4c1"
+        else
+          STATUS_TEXT="failing"
+          STATUS_FILL="#e05d44"
+        fi
+
+        # coverage color buckets
+        COV="${COV_IN:-0}"
+        if (( COV >= 90 )); then COV_FILL="#4c1"
+        elif (( COV >= 75 )); then COV_FILL="#dfb317"
+        else COV_FILL="#e05d44"
+        fi
+
+        # tests.svg
+        cat > badges/tests.svg <<SVG
+        <svg xmlns='http://www.w3.org/2000/svg' width='110' height='20'>
+        <linearGradient id='a' x2='0' y2='100%'><stop offset='0' stop-color='#bbb' stop-opacity='.1'/><stop offset='1' stop-opacity='.1'/></linearGradient>
+        <rect rx='3' width='110' height='20' fill='#555'/>
+        <rect rx='3' x='55' width='55' height='20' fill='${STATUS_FILL}'/>
+        <path fill='${STATUS_FILL}' d='M55 0h4v20h-4z'/>
+        <rect rx='3' width='110' height='20' fill='url(#a)'/>
+        <g fill='#fff' text-anchor='middle' font-family='Verdana' font-size='11'>
+        <text x='28' y='15'>${STATUS_LABEL}</text>
+        <text x='82' y='15'>${STATUS_TEXT}</text>
+        </g>
+        </svg>
+        SVG
+
+        # coverage.svg
+        cat > badges/coverage.svg <<SVG
+        <svg xmlns='http://www.w3.org/2000/svg' width='130' height='20'>
+        <linearGradient id='a' x2='0' y2='100%'><stop offset='0' stop-color='#bbb' stop-opacity='.1'/><stop offset='1' stop-opacity='.1'/></linearGradient>
+        <rect rx='3' width='130' height='20' fill='#555'/>
+        <rect rx='3' x='65' width='65' height='20' fill='${COV_FILL}'/>
+        <path fill='${COV_FILL}' d='M65 0h4v20h-4z'/>
+        <rect rx='3' width='130' height='20' fill='url(#a)'/>
+        <g fill='#fff' text-anchor='middle' font-family='Verdana' font-size='11'>
+        <text x='33' y='15'>coverage</text>
+        <text x='97' y='15'>${COV}%</text>
+        </g>
+        </svg>
+        SVG
+
+    - name: Commit badges
+      shell: bash
+      run: |
+        git config user.name "github-actions"
+        git config user.email "github-actions@users.noreply.github.com"   
+        git add badges/tests.svg badges/coverage.svg
+        # Commit only if changed
+        if ! git diff --cached --quiet; then
+          git commit -m "${{ inputs.commit-message }}"
+          git push origin "${{ inputs.commit-branch }}"
+        else
+          echo "No badge changes; skipping commit"
+        fi
