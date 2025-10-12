@@ -8,7 +8,7 @@ inputs:
   python-version:
     description: Python version to use
     required: false
-    default: "3.12"
+    default: "3.13"
   working-directory:
     description: Directory to run tests from
     required: false
@@ -52,10 +52,11 @@ runs:
       id: run
       shell: bash
       working-directory: ${{ inputs.working-directory }}
+      # we test the src folder. change as desired (eg src -> .)
       run: |
         set -euo pipefail
         uv run pytest --maxfail=1 --disable-warnings \
-          --cov=. --cov-report=term-missing --cov-report=xml \
+          --cov= src --cov-report=term-missing --cov-report=xml \
           ${{ inputs.pytest-args }} | tee pytest-output.txt
 
     - name: Extract coverage %
