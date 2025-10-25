@@ -3,6 +3,7 @@ from pypi_packaging_tutorial.core import example_function, add_two, ExampleClass
 
 def test_method():
     import os
+
     print(os.getcwd())
 
 
@@ -22,7 +23,7 @@ def test_methods():
             assert instance.example_class_method() == "expected result"
 
     except Exception as e:
-        print('cant import src.pypi_packaging_tutorial.core')
+        print("cant import src.pypi_packaging_tutorial.core")
         print(e)
 
 

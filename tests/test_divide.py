@@ -3,6 +3,7 @@ from pypi_packaging_tutorial.divide.divide_by_three import divide_by_three
 
 def test_method():
     import os
+
     print(os.getcwd())
 
 

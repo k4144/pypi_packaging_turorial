@@ -8,4 +8,4 @@ def example_function(a, b):
 
 class ExampleClass:
     def example_class_method(self):
-        return 'expected result'
+        return "expected result"
