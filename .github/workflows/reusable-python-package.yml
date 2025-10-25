@@ -1,0 +1,362 @@
+name: reusable-python-package
+
+on:
+  workflow_call:
+    inputs:
+      python-version:
+        description: Python version to use for all jobs.
+        type: string
+        default: "3.11"
+      run-bandit:
+        description: Set to false to skip Bandit security scanning.
+        type: boolean
+        default: true
+      badge-commit-message:
+        description: Commit message to use when badge assets change.
+        type: string
+        default: "chore: update workflow badges"
+      publish-on:
+        description: >
+          Git ref (branch or tag) required for automated publishing. Leave empty
+          to publish from any push event that contains a version bump.
+        type: string
+        default: ""
+    secrets:
+      pypi-token:
+        required: false
+        description: PyPI token used for publishing when a new release is detected.
+
+env:
+  PROJECT_ROOT: ${{ github.workspace }}
+
+jobs:
+  version:
+    name: Determine version
+    runs-on: ubuntu-latest
+    outputs:
+      current_version: ${{ steps.compute_version.outputs.current_version }}
+      previous_version: ${{ steps.compute_version.outputs.previous_version }}
+      release_type: ${{ steps.compute_version.outputs.release_type }}
+      version_changed: ${{ steps.compute_version.outputs.version_changed }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute version delta
+        id: compute_version
+        run: |
+          python <<'PY'
+          import json
+          import os
+          import re
+          import subprocess
+          from pathlib import Path
+
+          def read_current_version() -> str:
+              pyproject = Path("pyproject.toml")
+              version = None
+              if pyproject.exists():
+                  text = pyproject.read_text(encoding="utf-8")
+                  # Prefer PEP 621 [project] table if version is static.
+                  match = re.search(r"(?m)^\s*version\s*=\s*['\"]([^'\"]+)['\"]", text)
+                  if match:
+                      version = match.group(1)
+                  else:
+                      # Fallback to legacy [metadata] table.
+                      match = re.search(
+                          r"(?m)^\s*\[metadata\][\s\S]*?^\s*version\s*=\s*['\"]([^'\"]+)['\"]",
+                          text,
+                      )
+                      if match:
+                          version = match.group(1)
+              if version:
+                  return version.strip()
+
+              version_file = Path("src") / "pypi_packaging_tutorial" / "_version.py"
+              if version_file.exists():
+                  text = version_file.read_text(encoding="utf-8")
+                  match = re.search(r"__version__\s*=\s*['\"]([^'\"]+)['\"]", text)
+                  if match:
+                      return match.group(1).strip()
+              raise SystemExit("Unable to determine current project version.")
+
+          def read_previous_version() -> str:
+              try:
+                  tag = (
+                      subprocess.check_output(
+                          ["git", "describe", "--tags", "--abbrev=0"],
+                          text=True,
+                      )
+                      .strip()
+                  )
+              except subprocess.CalledProcessError:
+                  return "0.0.0"
+
+              # Accept tags that optionally start with a leading "v".
+              match = re.fullmatch(r"v?(?P<ver>\d+\.\d+\.\d+)", tag)
+              if match:
+                  return match.group("ver")
+              return "0.0.0"
+
+          def compare_versions(current: str, previous: str) -> tuple[str, bool]:
+              def parse(value: str) -> tuple[int, int, int]:
+                  parts = value.split(".")
+                  if len(parts) < 3:
+                      parts += ["0"] * (3 - len(parts))
+                  return tuple(int(p) for p in parts[:3])
+
+              c_major, c_minor, c_patch = parse(current)
+              p_major, p_minor, p_patch = parse(previous)
+
+              if (c_major, c_minor, c_patch) == (p_major, p_minor, p_patch):
+                  return ("none", False)
+              if c_major > p_major:
+                  return ("major", True)
+              if c_major == p_major and c_minor > p_minor:
+                  return ("minor", True)
+              if c_major == p_major and c_minor == p_minor and c_patch > p_patch:
+                  return ("patch", True)
+              # Handles unexpected version regressions.
+              return ("regression", True)
+
+          current_version = read_current_version()
+          previous_version = read_previous_version()
+          release_type, changed = compare_versions(current_version, previous_version)
+
+          output_path = os.environ["GITHUB_OUTPUT"]
+          with open(output_path, "a", encoding="utf-8") as fh:
+              fh.write(f"current_version={current_version}\n")
+              fh.write(f"previous_version={previous_version}\n")
+              fh.write(f"release_type={release_type}\n")
+              fh.write(f"version_changed={'true' if changed else 'false'}\n")
+          PY
+
+  tests:
+    name: Tests and security
+    runs-on: ubuntu-latest
+    needs: version
+    outputs:
+      junit_report: ${{ steps.store_meta.outputs.junit_report }}
+      coverage_report: ${{ steps.store_meta.outputs.coverage_report }}
+      bandit_report: ${{ steps.store_meta.outputs.bandit_report }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install . pytest pytest-cov coverage[toml]
+          if [ "${{ inputs.run-bandit }}" = "true" ]; then
+            pip install bandit
+          fi
+
+      - name: Run pytest with coverage
+        run: |
+          mkdir -p reports
+          pytest --junitxml=reports/pytest-report.xml --cov --cov-report=xml:reports/coverage.xml
+
+      - name: Run Bandit
+        if: inputs.run-bandit
+        run: |
+          mkdir -p reports
+          bandit -r src -f json -o reports/bandit.json
+
+      - name: Ensure Bandit report placeholder
+        if: ${{ !inputs.run-bandit }}
+        run: |
+          mkdir -p reports
+          echo '{"results": [], "metrics": {"_totals": {"SEVERITY.HIGH": 0, "SEVERITY.MEDIUM": 0, "SEVERITY.LOW": 0}}}' > reports/bandit.json
+
+      - name: Upload analysis artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: analysis-reports
+          path: reports/
+
+      - name: Surface report paths
+        id: store_meta
+        run: |
+          {
+            echo "junit_report=reports/pytest-report.xml"
+            echo "coverage_report=reports/coverage.xml"
+            echo "bandit_report=reports/bandit.json"
+          } >> "$GITHUB_OUTPUT"
+
+  badges:
+    name: Update badges
+    runs-on: ubuntu-latest
+    needs: tests
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download reports
+        uses: actions/download-artifact@v4
+        with:
+          name: analysis-reports
+          path: reports
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+
+      - name: Install badge tooling
+        run: |
+          python -m pip install --upgrade pip
+          pip install anybadge
+
+      - name: Generate badges
+        run: |
+          python <<'PY'
+          import json
+          import math
+          import os
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+          from anybadge import Badge
+
+          reports_dir = Path("reports")
+          badges_dir = Path("badges")
+          badges_dir.mkdir(parents=True, exist_ok=True)
+
+          # --- Test summary badge ---
+          junit_file = reports_dir / "pytest-report.xml"
+          tests_total = failures = errors = skips = 0
+          status_text = "unknown"
+          color = "lightgrey"
+
+          if junit_file.exists():
+              tree = ET.parse(junit_file)
+              root = tree.getroot()
+              tests_total = int(root.attrib.get("tests", 0))
+              failures = int(root.attrib.get("failures", 0))
+              errors = int(root.attrib.get("errors", 0))
+              skips = int(root.attrib.get("skipped", 0))
+              if failures == errors == 0:
+                  status_text = "passing"
+                  color = "green"
+              else:
+                  status_text = "failing"
+                  color = "red"
+              value = f"{status_text} ({tests_total} tests)"
+          else:
+              value = "no-data"
+
+          Badge(
+              label="tests",
+              value=value,
+              default_color=color,
+          ).write_badge(badges_dir / "tests.svg")
+
+          # --- Coverage badge ---
+          coverage_pct = 0.0
+          coverage_color = "lightgrey"
+          coverage_file = reports_dir / "coverage.xml"
+          if coverage_file.exists():
+              root = ET.parse(coverage_file).getroot()
+              pct = float(root.attrib.get("line-rate", 0)) * 100
+              coverage_pct = round(pct, 1)
+              if coverage_pct >= 90:
+                  coverage_color = "green"
+              elif coverage_pct >= 75:
+                  coverage_color = "yellowgreen"
+              elif coverage_pct >= 60:
+                  coverage_color = "orange"
+              else:
+                  coverage_color = "red"
+          Badge(
+              label="coverage",
+              value=f"{coverage_pct:.1f}%",
+              default_color=coverage_color,
+          ).write_badge(badges_dir / "coverage.svg")
+
+          # --- Bandit badge ---
+          bandit_color = "green"
+          bandit_value = "clean"
+          bandit_data = {"results": [], "metrics": {"_totals": {}}}
+          bandit_file = reports_dir / "bandit.json"
+          if bandit_file.exists():
+              bandit_data = json.loads(bandit_file.read_text(encoding="utf-8"))
+
+          totals = bandit_data.get("metrics", {}).get("_totals", {})
+          high = int(totals.get("SEVERITY.HIGH", 0))
+          medium = int(totals.get("SEVERITY.MEDIUM", 0))
+          low = int(totals.get("SEVERITY.LOW", 0))
+          issues = high + medium + low
+
+          if high > 0:
+              bandit_color = "red"
+              bandit_value = f"{high} high"
+          elif medium > 0:
+              bandit_color = "orange"
+              bandit_value = f"{medium} medium"
+          elif low > 0:
+              bandit_color = "yellow"
+              bandit_value = f"{low} low"
+          else:
+              bandit_value = "0 issues"
+
+          Badge(
+              label="bandit",
+              value=bandit_value,
+              default_color=bandit_color,
+          ).write_badge(badges_dir / "bandit.svg")
+          PY
+
+      - name: Commit badge updates
+        if: github.event_name == 'push'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git status --short badges | grep -q .
+          then
+            git add badges
+            git commit -m "${{ inputs.badge-commit-message }}"
+            git push
+          fi
+
+  publish:
+    name: Publish to PyPI
+    runs-on: ubuntu-latest
+    needs:
+      - version
+      - tests
+    if: >
+      needs.version.outputs.version_changed == 'true' &&
+      needs.version.outputs.release_type != 'regression' &&
+      github.event_name == 'push' &&
+      (inputs.publish-on == '' || startsWith(github.ref, format('refs/heads/{0}', inputs.publish-on)) || startsWith(github.ref, format('refs/tags/{0}', inputs.publish-on))) &&
+      secrets.pypi-token != ''
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+
+      - name: Install build dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine
+
+      - name: Build distribution
+        run: python -m build
+
+      - name: Publish to PyPI
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.pypi-token }}
+        run: twine upload dist/*

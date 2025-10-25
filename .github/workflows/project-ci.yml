@@ -1,0 +1,20 @@
+name: project-ci
+
+on:
+  push:
+    branches:
+      - main
+      - "release/*"
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  call-reusable-workflow:
+    uses: ./.github/workflows/reusable-python-package.yml
+    with:
+      python-version: "3.11"
+      publish-on: "main"
+    secrets:
+      pypi-token: ${{ secrets.PYPI_API_TOKEN }}

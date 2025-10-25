@@ -1,4 +1,4 @@
-# .github/workflows/publish-on-tag.yml
+# .github/workflows/publish.yml
 name: publish-on-tag
 on:
   push:

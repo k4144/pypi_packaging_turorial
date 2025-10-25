@@ -1,4 +1,5 @@
-name: Python Tests (pytest + coverage via uv)
+# .github/actions/python-tests
+name: Python Tests
 description: Run pytest with coverage using uv + pyproject.toml
 branding:
   icon: check-circle
@@ -45,7 +46,7 @@ runs:
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
-        # If you keep a lockfile, you can add --frozen/--locked.
+        # if we keep a lockfile, we can add --frozen/--locked.
         uv sync ${{ inputs.uv-sync-args }}
 
     - name: Run pytest with coverage

@@ -159,3 +159,7 @@ ui-tests/playwright-report
 .pnp.*
 ui-tests/.yarn/*
 ui-tests/.pnp.*
+
+
+#Ignore vscode AI rules
+.github/instructions/codacy.instructions.md

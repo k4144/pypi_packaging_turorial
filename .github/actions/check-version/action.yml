@@ -1,3 +1,4 @@
+# .github/actions/semver-release-check/action.yml
 name: SemVer Release Check
 description: Detect if current tag is a major/minor/patch change vs previous semver tag
 branding:
