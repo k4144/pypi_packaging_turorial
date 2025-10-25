@@ -257,7 +257,7 @@ jobs:
               label="tests",
               value=value,
               default_color=color,
-          ).write_badge(badges_dir / "tests.svg")
+          ).write_badge(badges_dir / "tests.svg", overwrite=True)
 
           # --- Coverage badge ---
           coverage_pct = 0.0
@@ -279,7 +279,7 @@ jobs:
               label="coverage",
               value=f"{coverage_pct:.1f}%",
               default_color=coverage_color,
-          ).write_badge(badges_dir / "coverage.svg")
+          ).write_badge(badges_dir / "coverage.svg", overwrite=True)
 
           # --- Bandit badge ---
           bandit_color = "green"
@@ -311,7 +311,7 @@ jobs:
               label="bandit",
               value=bandit_value,
               default_color=bandit_color,
-          ).write_badge(badges_dir / "bandit.svg")
+          ).write_badge(badges_dir / "bandit.svg", overwrite=True)
           PY
 
       - name: Commit badge updates
