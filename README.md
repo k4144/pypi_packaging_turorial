@@ -1,26 +1,24 @@
 
-gist cov
-![GitHub Actions Workflow Status](https://img.shields.io/endpoint?style=flat&url=https://gist.githubusercontent.com/k4144/ad3c2477fce563053e8a472d4126a137/raw&logo=pytest)
+#gist cov
+#![GitHub Actions Workflow Status](https://img.shields.io/endpoint?style=flat&url=https://gist.githubusercontent.com/k4144/ad3c2477fce563053e8a472d4126a137/raw&logo=pytest)
 
-tests
-![tests](https://raw.githubusercontent.com/k4144/pypi_packaging_turorial/main/badges/tests.svg)
+#tests
+#![tests](https://raw.githubusercontent.com/k4144/pypi_packaging_turorial/main/badges/tests.svg)
 
-coverage
-![coverage](https://raw.githubusercontent.com/k4144/pypi_packaging_turorial/main/badges/coverage.svg)
+#coverage
+#![coverage](https://raw.githubusercontent.com/k4144/pypi_packaging_turorial/main/badges/coverage.svg)
 
-CI
-![CI](https://github.com/k4144/pypi_packaging_turorial/actions/workflows/project-ci.yml/badge.svg)
 
-License
+
 [![License](https://img.shields.io/github/license/k4144/pypi_packaging_turorial)](https://github.com/k4144/pypi_packaging_turorial/blob/main/LICENSE)
 
-tests
+![CI](https://github.com/k4144/pypi_packaging_turorial/actions/workflows/project-ci.yml/badge.svg)
+
+
 ![Tests](./badges/tests.svg)
 
-coverage 
 ![Coverage](./badges/coverage.svg)
 
-bandit
 ![Bandit](./badges/bandit.svg)
 
 
