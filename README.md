@@ -11,6 +11,8 @@ coverage
 CI
 ![CI](https://github.com/k4144/pypi_packaging_turorial/actions/workflows/tests.yml/badge.svg)
 
+License
+[![License](https://img.shields.io/github/license/k4144/pypi_packaging_turorial)](https://github.com/k4144/pypi_packaging_turorial/blob/main/LICENSE)
 
 
 
