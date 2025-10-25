@@ -337,7 +337,7 @@ jobs:
       needs.version.outputs.release_type != 'regression' &&
       github.event_name == 'push' &&
       (inputs.publish-on == '' || startsWith(github.ref, format('refs/heads/{0}', inputs.publish-on)) || startsWith(github.ref, format('refs/tags/{0}', inputs.publish-on))) &&
-      secrets.pypi-token != ''
+      secrets['pypi-token'] != ''
     steps:
       - name: Checkout
         uses: actions/checkout@v4
