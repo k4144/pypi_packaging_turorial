@@ -240,20 +240,20 @@ jobs:
               tree = ET.parse(junit_file)
               root = tree.getroot()
 
-              def accumulate(node):
-                  nonlocal tests_total, failures, errors, skips
-                  tests_total += int(node.attrib.get("tests", 0))
-                  failures += int(node.attrib.get("failures", 0))
-                  errors += int(node.attrib.get("errors", 0))
-                  skips += int(node.attrib.get("skipped", node.attrib.get("skip", 0)))
-
-              # Pytest may emit <testsuite> or <testsuites>; handle both.
               if root.tag.endswith("testsuite"):
-                  accumulate(root)
+                  suites = [root]
               else:
-                  for suite in root.iter():
-                      if suite.tag.endswith("testsuite"):
-                          accumulate(suite)
+                  suites = [
+                      suite
+                      for suite in root.iter()
+                      if suite.tag.endswith("testsuite")
+                  ]
+
+              for suite in suites:
+                  tests_total += int(suite.attrib.get("tests", 0))
+                  failures += int(suite.attrib.get("failures", 0))
+                  errors += int(suite.attrib.get("errors", 0))
+                  skips += int(suite.attrib.get("skipped", suite.attrib.get("skip", 0)))
 
               if tests_total > 0:
                   if failures == errors == 0:
