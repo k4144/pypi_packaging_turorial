@@ -111,5 +111,7 @@ url = 'https://github.com/k4144/pypi_packaging_tutorial'
 [dependency-groups]
 dev = [
     "bandit>=1.7.10",
+    "sphinx>=7.1.2",
+    "sphinx-autodoc-typehints>=2.0.1",
 ]
 
