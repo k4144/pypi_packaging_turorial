@@ -141,6 +141,8 @@ jobs:
       junit_report: ${{ steps.store_meta.outputs.junit_report }}
       coverage_report: ${{ steps.store_meta.outputs.coverage_report }}
       bandit_report: ${{ steps.store_meta.outputs.bandit_report }}
+      black_report: ${{ steps.store_meta.outputs.black_report }}
+      black_status: ${{ steps.black_status.outputs.status }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -159,7 +161,11 @@ jobs:
           fi
 
       - name: Run Black (format check)
-        run: black --check src tests
+        id: black_check
+        continue-on-error: true
+        run: |
+          mkdir -p reports
+          black --check src tests > reports/black.log 2>&1
 
       - name: Run pytest with coverage
         run: |
@@ -178,6 +184,23 @@ jobs:
           mkdir -p reports
           echo '{"results": [], "metrics": {"_totals": {"SEVERITY.HIGH": 0, "SEVERITY.MEDIUM": 0, "SEVERITY.LOW": 0}}}' > reports/bandit.json
 
+      - name: Record Black status
+        id: black_status
+        run: |
+          mkdir -p reports
+          status="${{ steps.black_check.outcome }}"
+          if [ "$status" = "success" ]; then
+            badge_value="passing"
+          else
+            badge_value="failing"
+            echo "::warning::Black formatting changes required. See reports/black.log"
+          fi
+          printf '{"status": "%s"}\n' "$badge_value" > reports/black.json
+          {
+            echo "status=$badge_value"
+            echo "report=reports/black.json"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Upload analysis artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -191,35 +214,52 @@ jobs:
             echo "junit_report=reports/pytest-report.xml"
             echo "coverage_report=reports/coverage.xml"
             echo "bandit_report=reports/bandit.json"
+            echo "black_report=reports/black.json"
           } >> "$GITHUB_OUTPUT"
+
+      - name: Fail if Black formatting failed
+        if: ${{ steps.black_status.outputs.status == 'failing' }}
+        run: |
+          echo "::error::Black found formatting issues."
+          cat reports/black.log || true
+          exit 1
 
   badges:
     name: Update badges
     runs-on: ubuntu-latest
     needs: tests
+    if: ${{ always() }}
     permissions:
       contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Skip badge update on failure
+        if: ${{ needs.tests.result != 'success' }}
+        run: echo "Tests job failed; skipping badge generation."
+
       - name: Download reports
+        if: ${{ needs.tests.result == 'success' }}
         uses: actions/download-artifact@v4
         with:
           name: analysis-reports
           path: reports
 
       - name: Set up Python
+        if: ${{ needs.tests.result == 'success' }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ inputs.python-version }}
 
       - name: Install badge tooling
+        if: ${{ needs.tests.result == 'success' }}
         run: |
           python -m pip install --upgrade pip
           pip install anybadge
 
       - name: Generate badges
+        if: ${{ needs.tests.result == 'success' }}
         run: |
           python <<'PY'
           import json
@@ -330,10 +370,30 @@ jobs:
               value=bandit_value,
               default_color=bandit_color,
           ).write_badge(badges_dir / "bandit.svg", overwrite=True)
+
+          # --- Black badge ---
+          black_color = "lightgrey"
+          black_value = "unknown"
+          black_file = reports_dir / "black.json"
+          if black_file.exists():
+              data = json.loads(black_file.read_text(encoding="utf-8"))
+              black_value = data.get("status", "unknown")
+              if black_value == "passing":
+                  black_color = "green"
+              elif black_value == "failing":
+                  black_color = "red"
+              else:
+                  black_color = "orange"
+
+          Badge(
+              label="black",
+              value=black_value,
+              default_color=black_color,
+          ).write_badge(badges_dir / "black.svg", overwrite=True)
           PY
 
       - name: Commit badge updates
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && needs.tests.result == 'success'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
