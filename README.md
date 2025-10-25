@@ -5,6 +5,8 @@
 ![Coverage](./badges/coverage.svg)
 ![Bandit](./badges/bandit.svg)
 ![Black](./badges/black.svg)
+![Docs](./badges/docs.svg)
+
 
 provides a simple example to test pypi publishing and github workflows
 

@@ -143,6 +143,8 @@ jobs:
       bandit_report: ${{ steps.store_meta.outputs.bandit_report }}
       black_report: ${{ steps.store_meta.outputs.black_report }}
       black_status: ${{ steps.black_status.outputs.status }}
+      docs_report: ${{ steps.store_meta.outputs.docs_report }}
+      docs_status: ${{ steps.docs_status.outputs.status }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -155,7 +157,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install . pytest pytest-cov coverage[toml] black
+          pip install . pytest pytest-cov coverage[toml] black sphinx sphinx-autodoc-typehints myst-parser
           if [ "${{ inputs.run-bandit }}" = "true" ]; then
             pip install bandit
           fi
@@ -184,6 +186,13 @@ jobs:
           mkdir -p reports
           echo '{"results": [], "metrics": {"_totals": {"SEVERITY.HIGH": 0, "SEVERITY.MEDIUM": 0, "SEVERITY.LOW": 0}}}' > reports/bandit.json
 
+      - name: Build documentation
+        id: docs_build
+        continue-on-error: true
+        run: |
+          mkdir -p reports
+          make -C docs html > reports/docs.log 2>&1
+
       - name: Record Black status
         id: black_status
         run: |
@@ -201,6 +210,23 @@ jobs:
             echo "report=reports/black.json"
           } >> "$GITHUB_OUTPUT"
 
+      - name: Record docs status
+        id: docs_status
+        run: |
+          mkdir -p reports
+          status="${{ steps.docs_build.outcome }}"
+          if [ "$status" = "success" ]; then
+            badge_value="passing"
+          else
+            badge_value="failing"
+            echo "::warning::Documentation build failed. See reports/docs.log"
+          fi
+          printf '{"status": "%s"}\n' "$badge_value" > reports/docs.json
+          {
+            echo "status=$badge_value"
+            echo "report=reports/docs.json"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Upload analysis artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -215,6 +241,7 @@ jobs:
             echo "coverage_report=reports/coverage.xml"
             echo "bandit_report=reports/bandit.json"
             echo "black_report=reports/black.json"
+            echo "docs_report=reports/docs.json"
           } >> "$GITHUB_OUTPUT"
 
       - name: Fail if Black formatting failed
@@ -222,6 +249,13 @@ jobs:
         run: |
           echo "::error::Black found formatting issues."
           cat reports/black.log || true
+          exit 1
+
+      - name: Fail if docs build failed
+        if: ${{ steps.docs_status.outputs.status == 'failing' }}
+        run: |
+          echo "::error::Documentation build failed."
+          cat reports/docs.log || true
           exit 1
 
   badges:
@@ -390,6 +424,26 @@ jobs:
               value=black_value,
               default_color=black_color,
           ).write_badge(badges_dir / "black.svg", overwrite=True)
+
+          # --- Docs badge ---
+          docs_color = "lightgrey"
+          docs_value = "unknown"
+          docs_file = reports_dir / "docs.json"
+          if docs_file.exists():
+              data = json.loads(docs_file.read_text(encoding="utf-8"))
+              docs_value = data.get("status", "unknown")
+              if docs_value == "passing":
+                  docs_color = "green"
+              elif docs_value == "failing":
+                  docs_color = "red"
+              else:
+                  docs_color = "orange"
+
+          Badge(
+              label="docs",
+              value=docs_value,
+              default_color=docs_color,
+          ).write_badge(badges_dir / "docs.svg", overwrite=True)
           PY
 
       - name: Commit badge updates
