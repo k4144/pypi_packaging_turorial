@@ -161,7 +161,7 @@ jobs:
       - name: Run pytest with coverage
         run: |
           mkdir -p reports
-          pytest --junitxml=reports/pytest-report.xml --cov --cov-report=xml:reports/coverage.xml
+          pytest --junitxml=reports/pytest-report.xml --cov=pypi_packaging_tutorial --cov-report=xml:reports/coverage.xml
 
       - name: Run Bandit
         if: inputs.run-bandit
@@ -239,17 +239,32 @@ jobs:
           if junit_file.exists():
               tree = ET.parse(junit_file)
               root = tree.getroot()
-              tests_total = int(root.attrib.get("tests", 0))
-              failures = int(root.attrib.get("failures", 0))
-              errors = int(root.attrib.get("errors", 0))
-              skips = int(root.attrib.get("skipped", 0))
-              if failures == errors == 0:
-                  status_text = "passing"
-                  color = "green"
+
+              def accumulate(node):
+                  nonlocal tests_total, failures, errors, skips
+                  tests_total += int(node.attrib.get("tests", 0))
+                  failures += int(node.attrib.get("failures", 0))
+                  errors += int(node.attrib.get("errors", 0))
+                  skips += int(node.attrib.get("skipped", node.attrib.get("skip", 0)))
+
+              # Pytest may emit <testsuite> or <testsuites>; handle both.
+              if root.tag.endswith("testsuite"):
+                  accumulate(root)
               else:
-                  status_text = "failing"
-                  color = "red"
-              value = f"{status_text} ({tests_total} tests)"
+                  for suite in root.iter():
+                      if suite.tag.endswith("testsuite"):
+                          accumulate(suite)
+
+              if tests_total > 0:
+                  if failures == errors == 0:
+                      status_text = "passing"
+                      color = "green"
+                  else:
+                      status_text = "failing"
+                      color = "red"
+                  value = f"{status_text} ({tests_total} tests)"
+              else:
+                  value = "no-tests"
           else:
               value = "no-data"
 
