@@ -14,6 +14,14 @@ CI
 License
 [![License](https://img.shields.io/github/license/k4144/pypi_packaging_turorial)](https://github.com/k4144/pypi_packaging_turorial/blob/main/LICENSE)
 
+tests
+![Tests](./badges/tests.svg)
+
+coverage 
+![Coverage](./badges/coverage.svg)
+
+bandit
+![Bandit](./badges/bandit.svg)
 
 
 provides a simple example to test pypi publishing and github workflows
