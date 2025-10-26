@@ -1,0 +1,237 @@
+name: reusable-badges
+
+on:
+  workflow_call:
+    inputs:
+      artifact-name:
+        description: Name of artifact containing analysis reports (coverage, bandit, etc.).
+        type: string
+        default: analysis-reports
+      python-version:
+        description: Python version to use when generating badges.
+        type: string
+        default: "3.11"
+      badge-commit-message:
+        description: Commit message to use if badge assets change.
+        type: string
+        default: "chore: update workflow badges"
+      commit-badges:
+        description: >
+          When true, commit and push badge updates on push events. Requires write
+          access with GITHUB_TOKEN.
+        type: boolean
+        default: true
+      allow-failure:
+        description: >
+          When true, badge generation failures are reported as warnings instead of
+          failing the workflow.
+        type: boolean
+        default: false
+    outputs:
+      tests_badge:
+        description: Path to generated tests badge.
+        value: ${{ jobs.badges.outputs.tests_badge }}
+      coverage_badge:
+        description: Path to generated coverage badge.
+        value: ${{ jobs.badges.outputs.coverage_badge }}
+      bandit_badge:
+        description: Path to generated bandit badge.
+        value: ${{ jobs.badges.outputs.bandit_badge }}
+      black_badge:
+        description: Path to generated black badge.
+        value: ${{ jobs.badges.outputs.black_badge }}
+      docs_badge:
+        description: Path to generated docs badge.
+        value: ${{ jobs.badges.outputs.docs_badge }}
+
+jobs:
+  badges:
+    name: Generate badges
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      tests_badge: badges/tests.svg
+      coverage_badge: badges/coverage.svg
+      bandit_badge: badges/bandit.svg
+      black_badge: badges/black.svg
+      docs_badge: badges/docs.svg
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download analysis reports
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.artifact-name }}
+          path: reports
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+
+      - name: Install badge tooling
+        run: |
+          python -m pip install --upgrade pip
+          pip install anybadge
+
+      - name: Generate badges
+        id: generate
+        continue-on-error: ${{ inputs.allow-failure }}
+        run: |
+          python <<'PY'
+          import json
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+          from anybadge import Badge
+
+          reports_dir = Path("reports")
+          badges_dir = Path("badges")
+          badges_dir.mkdir(parents=True, exist_ok=True)
+
+          # Tests badge
+          junit_file = reports_dir / "pytest-report.xml"
+          tests_total = failures = errors = skips = 0
+          status_text = "unknown"
+          color = "lightgrey"
+          if junit_file.exists():
+              root = ET.parse(junit_file).getroot()
+              if root.tag.endswith("testsuite"):
+                  suites = [root]
+              else:
+                  suites = [
+                      suite for suite in root.iter()
+                      if suite.tag.endswith("testsuite")
+                  ]
+              for suite in suites:
+                  tests_total += int(suite.attrib.get("tests", 0))
+                  failures += int(suite.attrib.get("failures", 0))
+                  errors += int(suite.attrib.get("errors", 0))
+                  skips += int(suite.attrib.get("skipped", suite.attrib.get("skip", 0)))
+
+              if tests_total > 0:
+                  if failures == errors == 0:
+                      status_text = "passing"
+                      color = "green"
+                  else:
+                      status_text = "failing"
+                      color = "red"
+                  value = f"{status_text} ({tests_total} tests)"
+              else:
+                  value = "no-tests"
+          else:
+              value = "no-data"
+          Badge(label="tests", value=value, default_color=color).write_badge(
+              badges_dir / "tests.svg", overwrite=True
+          )
+
+          # Coverage badge
+          coverage_pct = 0.0
+          coverage_color = "lightgrey"
+          coverage_file = reports_dir / "coverage.xml"
+          if coverage_file.exists():
+              root = ET.parse(coverage_file).getroot()
+              pct = float(root.attrib.get("line-rate", 0)) * 100
+              coverage_pct = round(pct, 1)
+              if coverage_pct >= 90:
+                  coverage_color = "green"
+              elif coverage_pct >= 75:
+                  coverage_color = "yellowgreen"
+              elif coverage_pct >= 60:
+                  coverage_color = "orange"
+              else:
+                  coverage_color = "red"
+          Badge(
+              label="coverage",
+              value=f"{coverage_pct:.1f}%",
+              default_color=coverage_color,
+          ).write_badge(badges_dir / "coverage.svg", overwrite=True)
+
+          # Bandit badge
+          bandit_color = "green"
+          bandit_value = "clean"
+          bandit_file = reports_dir / "bandit.json"
+          if bandit_file.exists():
+              bandit_data = json.loads(bandit_file.read_text(encoding="utf-8"))
+              totals = bandit_data.get("metrics", {}).get("_totals", {})
+              high = int(totals.get("SEVERITY.HIGH", 0))
+              medium = int(totals.get("SEVERITY.MEDIUM", 0))
+              low = int(totals.get("SEVERITY.LOW", 0))
+              if high > 0:
+                  bandit_color = "red"
+                  bandit_value = f"{high} high"
+              elif medium > 0:
+                  bandit_color = "orange"
+                  bandit_value = f"{medium} medium"
+              elif low > 0:
+                  bandit_color = "yellow"
+                  bandit_value = f"{low} low"
+              else:
+                  bandit_value = "0 issues"
+          Badge(
+              label="bandit",
+              value=bandit_value,
+              default_color=bandit_color,
+          ).write_badge(badges_dir / "bandit.svg", overwrite=True)
+
+          # Black badge
+          black_color = "lightgrey"
+          black_value = "unknown"
+          black_file = reports_dir / "black.json"
+          if black_file.exists():
+              data = json.loads(black_file.read_text(encoding="utf-8"))
+              black_value = data.get("status", "unknown")
+              if black_value == "passing":
+                  black_color = "green"
+              elif black_value == "failing":
+                  black_color = "red"
+              else:
+                  black_color = "orange"
+          Badge(
+              label="black",
+              value=black_value,
+              default_color=black_color,
+          ).write_badge(badges_dir / "black.svg", overwrite=True)
+
+          # Docs badge
+          docs_color = "lightgrey"
+          docs_value = "unknown"
+          docs_file = reports_dir / "docs.json"
+          if docs_file.exists():
+              data = json.loads(docs_file.read_text(encoding="utf-8"))
+              docs_value = data.get("status", "unknown")
+              if docs_value == "passing":
+                  docs_color = "green"
+              elif docs_value == "failing":
+                  docs_color = "red"
+              else:
+                  docs_color = "orange"
+          Badge(
+              label="docs",
+              value=docs_value,
+              default_color=docs_color,
+          ).write_badge(badges_dir / "docs.svg", overwrite=True)
+          PY
+
+      - name: Fail if badge generation failed
+        if: ${{ steps.generate.outcome == 'failure' && !inputs.allow-failure }}
+        run: |
+          echo "::error::Badge generation failed."
+          exit 1
+
+      - name: Commit badge updates
+        if: >
+          inputs.commit-badges &&
+          github.event_name == 'push' &&
+          steps.generate.outcome == 'success'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git status --short badges | grep -q .
+          then
+            git add badges
+            git commit -m "${{ inputs.badge-commit-message }}"
+            git push
+          else
+            echo "No badge changes detected"
