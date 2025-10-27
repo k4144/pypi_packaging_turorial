@@ -40,6 +40,9 @@ on:
       black_badge:
         description: Path to generated black badge.
         value: ${{ jobs.badges.outputs.black_badge }}
+      ruff_badge:
+        description: Path to generated Ruff badge.
+        value: ${{ jobs.badges.outputs.ruff_badge }}
       docs_badge:
         description: Path to generated docs badge.
         value: ${{ jobs.badges.outputs.docs_badge }}
@@ -55,6 +58,7 @@ jobs:
       coverage_badge: badges/coverage.svg
       bandit_badge: badges/bandit.svg
       black_badge: badges/black.svg
+      ruff_badge: badges/ruff.svg
       docs_badge: badges/docs.svg
     steps:
       - name: Checkout repository
@@ -193,6 +197,28 @@ jobs:
               value=black_value,
               default_color=black_color,
           ).write_badge(badges_dir / "black.svg", overwrite=True)
+
+          # Ruff badge
+          ruff_color = "lightgrey"
+          ruff_value = "unknown"
+          ruff_file = reports_dir / "ruff.json"
+          if ruff_file.exists():
+              data = json.loads(ruff_file.read_text(encoding="utf-8"))
+              ruff_value = data.get("status", "unknown")
+              issues = data.get("issues")
+              if isinstance(issues, int) and issues > 0 and ruff_value == "passing":
+                  ruff_value = "failing"
+              if ruff_value == "passing":
+                  ruff_color = "green"
+              elif ruff_value == "failing":
+                  ruff_color = "red"
+              else:
+                  ruff_color = "orange"
+          Badge(
+              label="ruff",
+              value=ruff_value,
+              default_color=ruff_color,
+          ).write_badge(badges_dir / "ruff.svg", overwrite=True)
 
           # Docs badge
           docs_color = "lightgrey"

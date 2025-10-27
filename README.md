@@ -5,6 +5,7 @@
 [![Coverage](./badges/coverage.svg)](https://docs.pytest.org/en/stable/)
 [![Bandit](./badges/bandit.svg)](https://bandit.readthedocs.io/en/latest/)
 [![Black](./badges/black.svg)](https://pypi.org/project/black/)
+![Ruff](./badges/ruff.svg)(https://pypi.org/project/ruff/)
 [![Docs](./badges/docs.svg)](https://www.sphinx-doc.org/en/master/usage/quickstart.html)
 
 
